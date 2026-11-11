@@ -80,7 +80,9 @@ def listar_matriculas():
     cursor = conn.cursor()
     cursor.execute(
         '''
-        SELECT * FROM matriculas
+        SELECT matriculas.id, estudantes.nome, matriculas.nome_disciplina
+        FROM matriculas
+        JOIN estudantes ON matriculas.estudante_id = estudantes.id
         '''
     )
     matriculas = cursor.fetchall()
