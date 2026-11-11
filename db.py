@@ -27,7 +27,8 @@ def criar_tabela_matriculas():
         CREATE TABLE IF NOT EXISTS matriculas(
         id INTEGER PRIMARY KEY,
         nome_disciplina TEXT,
-        estudante_id INTEGER,
+        estudante_id INTEGER
+        FOREIGN KEY (estudante_id) REFERENCES estudantes(id))
         '''
     )
     conn.commit()
@@ -58,6 +59,5 @@ def listar_estudantes():
     estudantes = cursor.fetchall()
     for estudante in estudantes:
         print(estudante)
-    conn.commit()
     conn.close()
 
