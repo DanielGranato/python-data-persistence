@@ -27,7 +27,7 @@ def criar_tabela_matriculas():
         CREATE TABLE IF NOT EXISTS matriculas(
         id INTEGER PRIMARY KEY,
         nome_disciplina TEXT,
-        estudante_id INTEGER
+        estudante_id INTEGER,
         FOREIGN KEY (estudante_id) REFERENCES estudantes(id))
         '''
     )
@@ -61,3 +61,11 @@ def listar_estudantes():
         print(estudante)
     conn.close()
 
+
+if __name__ == '__main__':
+    criar_tabela_estudantes()
+    criar_tabela_matriculas()
+    criar_estudante('Ana', 20)
+    criar_estudante('Bruno', 22)
+    listar_estudantes()
+    
