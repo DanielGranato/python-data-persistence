@@ -62,10 +62,30 @@ def listar_estudantes():
     conn.close()
 
 
-if __name__ == '__main__':
-    criar_tabela_estudantes()
-    criar_tabela_matriculas()
-    criar_estudante('Ana', 20)
-    criar_estudante('Bruno', 22)
-    listar_estudantes()
-    
+def criar_matricula(estudante_id, nome_disciplina):
+    conn = conectar()
+    cursor = conn.cursor()
+    cursor.execute(
+        '''
+        INSERT INTO matriculas (estudante_id, nome_disciplina)
+        VALUES(?, ?)
+        ''', (estudante_id, nome_disciplina)
+    )
+    conn.commit()
+    conn.close()
+
+
+def listar_matriculas():
+    conn = conectar()
+    cursor = conn.cursor()
+    cursor.execute(
+        '''
+        SELECT * FROM matriculas
+        '''
+    )
+    matriculas = cursor.fetchall()
+    for matricula in matriculas:
+        print(matricula)
+    conn.close()
+
+
