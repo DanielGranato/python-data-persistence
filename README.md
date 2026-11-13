@@ -9,7 +9,7 @@ This repository follows my learning path through data persistence in Python. Eac
 | Stage | Folder | Status |
 |---|---|---|
 | SQLite with `sqlite3` | `sqlite/` | ✅ Done |
-| REST API with FastAPI + PostgreSQL | `fastapi-postgres/` | 🚧 In progress |
+| REST API with FastAPI + PostgreSQL | `fastapi-postgres/` | ✅ Running |
 
 ---
 
@@ -66,13 +66,65 @@ python main.py
 
 ## Stage 2 – FastAPI + PostgreSQL
 
-Coming next: a REST API for the same domain, using:
+The same student enrollment domain, now exposed as a REST API and persisted in PostgreSQL.
 
-- **FastAPI** for the routes
-- **SQLAlchemy** as the ORM
-- **PostgreSQL** as the database, via **psycopg2**
-- **Pydantic** for request and response validation
-- **python-dotenv** to keep credentials out of the code
+### Stack
+
+- **FastAPI** – routes and automatic API docs
+- **Uvicorn** – ASGI server
+- **SQLAlchemy** – ORM: Python classes are mapped to database tables
+- **PostgreSQL** – database, accessed through the **psycopg** driver
+- **Pydantic** – request and response validation
+- **python-dotenv** – loads credentials from a `.env` file, keeping them out of the code
+
+### Project files
+
+| File | Responsibility |
+|---|---|
+| `database.py` | Engine, session factory and declarative `Base` |
+| `models.py` | SQLAlchemy models: how data is stored (tables) |
+| `schemas.py` | Pydantic schemas: what goes in and out of the API (JSON) |
+| `main.py` | FastAPI app, database session dependency and routes |
+
+### Endpoints
+
+| Method | Route | Description |
+|---|---|---|
+| `POST` | `/students` | Create a student |
+| `GET` | `/students` | List students |
+| `GET` | `/students/{id}` | Get a student by id |
+| `PUT` | `/students/{id}` | Update a student |
+| `DELETE` | `/students/{id}` | Delete a student and their enrollments |
+| `POST` | `/enrollments` | Enroll a student in a course |
+| `GET` | `/enrollments` | List enrollments |
+| `GET` | `/enrollments/{id}` | Get an enrollment by id |
+| `PUT` | `/enrollments/{id}` | Update an enrollment |
+| `DELETE` | `/enrollments/{id}` | Delete an enrollment |
+
+### How to run
+
+**1. Install PostgreSQL** and create the database:
+
+```sql
+CREATE DATABASE escola;
+```
+
+**2. Configure the credentials.** Copy `.env.example` to `.env` and fill in your own PostgreSQL user and password:
+
+```
+DATABASE_URL=postgresql://USER:PASSWORD@localhost:5432/escola
+```
+
+**3. Install the dependencies and start the server** (from the `fastapi-postgres/` folder, with the virtual environment active):
+
+```bash
+pip install -r ../requirements.txt
+uvicorn main:app --reload
+```
+
+The tables are created automatically on startup.
+
+**4. Open the interactive docs** at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) to try every endpoint from the browser.
 
 ## Setup
 
@@ -83,7 +135,7 @@ source venv/Scripts/activate   # Windows (Git Bash)
 pip install -r requirements.txt
 ```
 
-Database credentials for Stage 2 are read from a `.env` file, which is not versioned. See `.env.example` for the expected variables.
+The `.env` file holds real credentials and is never versioned. See `.env.example` for the expected variables.
 
 ## Project structure
 
@@ -92,7 +144,11 @@ Database credentials for Stage 2 are read from a `.env` file, which is not versi
 ├── sqlite/
 │   ├── db.py          # database functions
 │   └── main.py        # demo entry point
-├── fastapi-postgres/  # stage 2
+├── fastapi-postgres/
+│   ├── database.py
+│   ├── models.py
+│   ├── schemas.py
+│   └── main.py
 ├── requirements.txt
 ├── .env.example
 └── .gitignore
