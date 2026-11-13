@@ -7,7 +7,7 @@ from database import SessionLocal, engine
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Escola API")
+app = FastAPI(title="School API")
 
 
 def get_db():
@@ -18,102 +18,101 @@ def get_db():
         db.close()
 
 
-# ---------- Estudantes ----------
+# ---------- Students ----------
 
-@app.post("/estudantes", response_model=schemas.EstudanteResponse, status_code=201)
-def criar_estudante(estudante: schemas.EstudanteCreate, db: Session = Depends(get_db)):
-    novo = models.Estudante(**estudante.model_dump())
-    db.add(novo)
+@app.post("/students", response_model=schemas.StudentResponse, status_code=201)
+def create_student(student: schemas.StudentCreate, db: Session = Depends(get_db)):
+    db_student = models.Student(**student.model_dump())
+    db.add(db_student)
     db.commit()
-    db.refresh(novo)
-    return novo
+    db.refresh(db_student)
+    return db_student
 
 
-@app.get("/estudantes", response_model=List[schemas.EstudanteResponse])
-def listar_estudantes(db: Session = Depends(get_db)):
-    return db.query(models.Estudante).all()
+@app.get("/students", response_model=List[schemas.StudentResponse])
+def read_students(db: Session = Depends(get_db)):
+    return db.query(models.Student).all()
 
 
-@app.get("/estudantes/{estudante_id}", response_model=schemas.EstudanteResponse)
-def obter_estudante(estudante_id: int, db: Session = Depends(get_db)):
-    estudante = db.get(models.Estudante, estudante_id)
-    if not estudante:
-        raise HTTPException(status_code=404, detail="Estudante não encontrado")
-    return estudante
+@app.get("/students/{student_id}", response_model=schemas.StudentResponse)
+def read_student(student_id: int, db: Session = Depends(get_db)):
+    db_student = db.get(models.Student, student_id)
+    if not db_student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return db_student
 
 
-@app.put("/estudantes/{estudante_id}", response_model=schemas.EstudanteResponse)
-def atualizar_estudante(estudante_id: int, dados: schemas.EstudanteCreate,
-                        db: Session = Depends(get_db)):
-    estudante = db.get(models.Estudante, estudante_id)
-    if not estudante:
-        raise HTTPException(status_code=404, detail="Estudante não encontrado")
-    for campo, valor in dados.model_dump().items():
-        setattr(estudante, campo, valor)
+@app.put("/students/{student_id}", response_model=schemas.StudentResponse)
+def update_student(student_id: int, data: schemas.StudentCreate,
+                   db: Session = Depends(get_db)):
+    db_student = db.get(models.Student, student_id)
+    if not db_student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    for field, value in data.model_dump().items():
+        setattr(db_student, field, value)
     db.commit()
-    db.refresh(estudante)
-    return estudante
+    db.refresh(db_student)
+    return db_student
 
 
-@app.delete("/estudantes/{estudante_id}", status_code=204)
-def deletar_estudante(estudante_id: int, db: Session = Depends(get_db)):
-    estudante = db.get(models.Estudante, estudante_id)
-    if not estudante:
-        raise HTTPException(status_code=404, detail="Estudante não encontrado")
-    # sem cascade no model, remove as matrículas antes para não violar a FK
-    db.query(models.Matricula).filter(
-        models.Matricula.estudante_id == estudante_id
+@app.delete("/students/{student_id}", status_code=204)
+def delete_student(student_id: int, db: Session = Depends(get_db)):
+    db_student = db.get(models.Student, student_id)
+    if not db_student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    # no cascade on the model: delete enrollments first to avoid breaking the FK
+    db.query(models.Enrollment).filter(
+        models.Enrollment.student_id == student_id
     ).delete()
-    db.delete(estudante)
+    db.delete(db_student)
     db.commit()
 
 
-# ---------- Matrículas ----------
+# ---------- Enrollments ----------
 
-@app.post("/matriculas", response_model=schemas.MatriculaResponse, status_code=201)
-def criar_matricula(matricula: schemas.MatriculaCreate, db: Session = Depends(get_db)):
-    if not db.get(models.Estudante, matricula.estudante_id):
-        raise HTTPException(status_code=404, detail="Estudante não encontrado")
-    nova = models.Matricula(**matricula.model_dump())
-    db.add(nova)
+@app.post("/enrollments", response_model=schemas.EnrollmentResponse, status_code=201)
+def create_enrollment(enrollment: schemas.EnrollmentCreate, db: Session = Depends(get_db)):
+    if not db.get(models.Student, enrollment.student_id):
+        raise HTTPException(status_code=404, detail="Student not found")
+    db_enrollment = models.Enrollment(**enrollment.model_dump())
+    db.add(db_enrollment)
     db.commit()
-    db.refresh(nova)
-    return nova
+    db.refresh(db_enrollment)
+    return db_enrollment
 
 
-@app.get("/matriculas", response_model=List[schemas.MatriculaResponse])
-def listar_matriculas(db: Session = Depends(get_db)):
-    return db.query(models.Matricula).all()
+@app.get("/enrollments", response_model=List[schemas.EnrollmentResponse])
+def read_enrollments(db: Session = Depends(get_db)):
+    return db.query(models.Enrollment).all()
 
 
-@app.get("/matriculas/{matricula_id}", response_model=schemas.MatriculaResponse)
-def obter_matricula(matricula_id: int, db: Session = Depends(get_db)):
-    matricula = db.get(models.Matricula, matricula_id)
-    if not matricula:
-        raise HTTPException(status_code=404, detail="Matrícula não encontrada")
-    return matricula
+@app.get("/enrollments/{enrollment_id}", response_model=schemas.EnrollmentResponse)
+def read_enrollment(enrollment_id: int, db: Session = Depends(get_db)):
+    db_enrollment = db.get(models.Enrollment, enrollment_id)
+    if not db_enrollment:
+        raise HTTPException(status_code=404, detail="Enrollment not found")
+    return db_enrollment
 
 
-@app.put("/matriculas/{matricula_id}", response_model=schemas.MatriculaResponse)
-def atualizar_matricula(matricula_id: int, dados: schemas.MatriculaCreate,
-                        db: Session = Depends(get_db)):
-    matricula = db.get(models.Matricula, matricula_id)
-    if not matricula:
-        raise HTTPException(status_code=404, detail="Matrícula não encontrada")
-    if not db.get(models.Estudante, dados.estudante_id):
-        raise HTTPException(status_code=404, detail="Estudante não encontrado")
-    for campo, valor in dados.model_dump().items():
-        setattr(matricula, campo, valor)
+@app.put("/enrollments/{enrollment_id}", response_model=schemas.EnrollmentResponse)
+def update_enrollment(enrollment_id: int, data: schemas.EnrollmentCreate,
+                      db: Session = Depends(get_db)):
+    db_enrollment = db.get(models.Enrollment, enrollment_id)
+    if not db_enrollment:
+        raise HTTPException(status_code=404, detail="Enrollment not found")
+    if not db.get(models.Student, data.student_id):
+        raise HTTPException(status_code=404, detail="Student not found")
+    for field, value in data.model_dump().items():
+        setattr(db_enrollment, field, value)
     db.commit()
-    db.refresh(matricula)
-    return matricula
+    db.refresh(db_enrollment)
+    return db_enrollment
 
 
-@app.delete("/matriculas/{matricula_id}", status_code=204)
-def deletar_matricula(matricula_id: int, db: Session = Depends(get_db)):
-    matricula = db.get(models.Matricula, matricula_id)
-    if not matricula:
-        raise HTTPException(status_code=404, detail="Matrícula não encontrada")
-    db.delete(matricula)
+@app.delete("/enrollments/{enrollment_id}", status_code=204)
+def delete_enrollment(enrollment_id: int, db: Session = Depends(get_db)):
+    db_enrollment = db.get(models.Enrollment, enrollment_id)
+    if not db_enrollment:
+        raise HTTPException(status_code=404, detail="Enrollment not found")
+    db.delete(db_enrollment)
     db.commit()
-

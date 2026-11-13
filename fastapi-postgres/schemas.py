@@ -1,27 +1,31 @@
 from pydantic import BaseModel, ConfigDict
 
-class EstudanteBase(BaseModel):
-    nome: str
-    idade: int
 
-class EstudanteCreate(EstudanteBase):
+class StudentBase(BaseModel):
+    name: str
+    age: int
+
+
+class StudentCreate(StudentBase):
     pass
 
-class EstudanteResponse(EstudanteBase):
+
+class StudentResponse(StudentBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
 
 
-class MatriculaBase(BaseModel):
-    estudante_id: int
-    nome_disciplina: str
+class EnrollmentBase(BaseModel):
+    student_id: int
+    course_name: str
 
-class MatriculaCreate(MatriculaBase):
+
+class EnrollmentCreate(EnrollmentBase):
     pass
 
-class MatriculaResponse(MatriculaBase):
+
+class EnrollmentResponse(EnrollmentBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-
