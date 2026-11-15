@@ -1,6 +1,6 @@
 # Python Data Persistence
 
-Data persistence in Python: from a local SQLite database with `sqlite3` to a CRUD REST API with FastAPI and PostgreSQL.
+Data persistence in Python: from a local SQLite database with `sqlite3` to a CRUD REST API with FastAPI and PostgreSQL, and on to modeling relationships between tables.
 
 This repository follows my learning path through data persistence in Python. Each stage lives in its own folder and builds on the previous one.
 
@@ -9,7 +9,8 @@ This repository follows my learning path through data persistence in Python. Eac
 | Stage | Folder | Status |
 |---|---|---|
 | SQLite with `sqlite3` | `sqlite/` | ✅ Done |
-| REST API with FastAPI + PostgreSQL | `fastapi-postgres/` | ✅ Running |
+| REST API with FastAPI + PostgreSQL | `fastapi-postgres/` | ✅ Done |
+| Data modeling: one-to-one relationship | `fastapi-modeling/` | ✅ Done |
 
 ---
 
@@ -126,6 +127,72 @@ The tables are created automatically on startup.
 
 **4. Open the interactive docs** at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) to try every endpoint from the browser.
 
+---
+
+## Stage 3 – Data modeling
+
+The same FastAPI + SQLAlchemy stack, now focused on **modeling relationships between tables**. This stage models a one-to-one relationship: each student has exactly one profile.
+
+### Data model
+
+```
+students                   profiles
+────────                   ────────
+id (PK)      ◄──────────── student_id (FK, unique)
+name                       id (PK)
+email (unique)             age
+                           address
+```
+
+- `student_id` in `profiles` is a foreign key marked `unique=True`, which is what enforces **one** profile per student at the database level.
+- On the SQLAlchemy side, `relationship(..., uselist=False)` makes `student.profile` a single object instead of a list, and `back_populates` links both directions (`student.profile` and `profile.student`).
+- `cascade="all, delete-orphan"` removes the profile when its student is deleted.
+
+### Nested creation
+
+The profile is created together with the student, in a single request. The client does not send a `student_id`, since the student has no id yet: `ProfileCreate` has no such field, and SQLAlchemy fills it in when the student is inserted.
+
+```json
+{
+  "name": "Ana",
+  "email": "ana@email.com",
+  "profile": { "age": 20, "address": "Rua A, 10" }
+}
+```
+
+The response returns the student with the profile nested inside it. Read routes use `joinedload` to fetch student and profile in a single query.
+
+### Endpoints
+
+| Method | Route | Description |
+|---|---|---|
+| `POST` | `/students` | Create a student together with their profile |
+| `GET` | `/students` | List students with their profiles |
+| `GET` | `/students/{id}` | Get a student with their profile |
+| `PUT` | `/students/{id}` | Update a student and their profile |
+| `DELETE` | `/students/{id}` | Delete a student and their profile |
+
+Creating or updating a student with an email that is already registered returns `400`.
+
+### Concepts practiced
+
+- One-to-one relationships with `ForeignKey(unique=True)` and `relationship(uselist=False)`
+- Bidirectional relationships with `back_populates`
+- Cascade deletes with `delete-orphan`
+- Nested Pydantic schemas for request and response bodies
+- Eager loading with `joinedload`
+
+### How to run
+
+Create a database (for example `db_escola`), copy `fastapi-modeling/.env.example` to `fastapi-modeling/.env`, fill in the credentials, and start the server from that folder:
+
+```bash
+cd fastapi-modeling
+uvicorn main:app --reload
+```
+
+The tables are created automatically on startup. Docs are available at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
+
 ## Setup
 
 ```bash
@@ -135,7 +202,7 @@ source venv/Scripts/activate   # Windows (Git Bash)
 pip install -r requirements.txt
 ```
 
-The `.env` file holds real credentials and is never versioned. See `.env.example` for the expected variables.
+Each FastAPI stage has its own `.env`, which holds real credentials and is never versioned. See the `.env.example` next to it for the expected variables.
 
 ## Project structure
 
@@ -148,8 +215,14 @@ The `.env` file holds real credentials and is never versioned. See `.env.example
 │   ├── database.py
 │   ├── models.py
 │   ├── schemas.py
-│   └── main.py
+│   ├── main.py
+│   └── .env.example
+├── fastapi-modeling/
+│   ├── database.py
+│   ├── models.py
+│   ├── schemas.py
+│   ├── main.py
+│   └── .env.example
 ├── requirements.txt
-├── .env.example
 └── .gitignore
 ```
